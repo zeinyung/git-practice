@@ -151,11 +151,11 @@ def say_hello(name):         # 这行之后 say_hello 已被加强
     ...
 ```
 例：@log_before_after
-python
-复制
+```python
 @log_before_after
 def say_hello(name):
     return f"你好，{name}"
+```
 原函数 = say_hello，就是 : 下面那三行代码。它原本只会返回 "你好，张三"，别的什么都不会。
 
 处理器 = log_before_after。它做的事：接收 say_hello，在外面裹一层"开始/结束"的打印，裹完了返回。
