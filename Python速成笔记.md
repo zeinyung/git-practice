@@ -143,13 +143,24 @@ import numpy as np             # 起别名
 
 ### 一句话解释
 
-**装饰器 = `函数 = 处理器(函数)` 的简写。**
+**装饰器 = `函数 = 处理器(函数)` 的简写。装饰器相当于将装饰的原函数作为参数上传到处理器**
 
 ```python
 @add_log                     # say_hello = add_log(say_hello)
 def say_hello(name):         # 这行之后 say_hello 已被加强
     ...
 ```
+例：@log_before_after
+python
+复制
+@log_before_after
+def say_hello(name):
+    return f"你好，{name}"
+原函数 = say_hello，就是 : 下面那三行代码。它原本只会返回 "你好，张三"，别的什么都不会。
+
+处理器 = log_before_after。它做的事：接收 say_hello，在外面裹一层"开始/结束"的打印，裹完了返回。
+
+新东西 = 裹完之后吐出来的那个函数。它做的事：先打印 【开始】，再调用原来的 say_hello 拿结果，再打印 【结束】，最后返回结果。
 
 ### 从不用装饰器到用的完整演变
 
