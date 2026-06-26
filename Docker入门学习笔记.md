@@ -388,7 +388,14 @@ CMD ["java", "Hello"]
 **第三步：构建镜像**
 
 ```bash
-sudo docker build -t hello-docker:1.0 .
+# Dockerfile 在当前目录
+sudo docker build -t hello:1.0 .
+
+# Dockerfile 改了个名字，但在当前目录
+sudo docker build -t hello:1.0 -f MyDockerfile .
+
+# Dockerfile 完全在别的目录
+sudo docker build -t hello:1.0 -f /other/dir/Dockerfile /other/dir
 ```
 
 `-t` = 起名（tag），`hello-docker` 是镜像名，`1.0` 是版本号，`.` = Dockerfile 在当前目录。
