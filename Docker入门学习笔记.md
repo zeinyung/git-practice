@@ -629,15 +629,13 @@ volumes:                        # 声明/定义 Volume
 
 ### 管理命令
 
-```bash
-sudo docker compose up -d       # 启动
-sudo docker compose ps          # 看状态
-sudo docker compose stop        # 停止所有服务
-sudo docker compose down        # 停止 + 删除容器（Volume 不删）
-sudo docker compose down -v     # 停止 + 删除容器 + 删除 Volume（数据也删了）
-```
-
----
+| 指令 | 作用 |
+|------|------|
+| `sudo docker compose up -d` | 启动 |
+| `sudo docker compose ps` | 看状态 |
+| `sudo docker compose stop` | 停止所有服务 |
+| `sudo docker compose down` | 停止 + 删除容器（Volume 不删） |
+| `sudo docker compose down -v` | 停止 + 删除容器 + 删除 Volume（数据也删了） |
 
 ## 十四、Networks + depends_on
 
