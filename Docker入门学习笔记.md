@@ -302,6 +302,9 @@ CMD ["java", "-jar", "/app.jar"]  ← 第4层：启动命令
 | `docker logs 容器` | 看日志 |
 | `docker images` | 看本地镜像 |
 | `docker image history 镜像` | 看镜像分层 |
+| `docker build -t 镜像名:版本 .` | 根据 Dockerfile 构建镜像 |
+| `docker run --rm 镜像` | 容器退出后自动删除 |
+| `docker run 镜像 env` | 打印容器的所有环境变量 |
 
 ---
 
