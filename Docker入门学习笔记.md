@@ -305,6 +305,15 @@ CMD ["java", "-jar", "/app.jar"]  ← 第4层：启动命令
 | `docker build -t 镜像名:版本 .` | 根据 Dockerfile 构建镜像 |
 | `docker run --rm 镜像` | 容器退出后自动删除 |
 | `docker run 镜像 env` | 打印容器的所有环境变量 |
+| `docker volume create 卷名` | 创建 Volume |
+| `docker volume ls` | 列出所有 Volume |
+| `docker volume rm 卷名` | 删除 Volume |
+| `docker compose up -d` | 一键启动 compose 所有服务 |
+| `docker compose ps` | 看 compose 管理的容器 |
+| `docker compose stop` | 停止所有服务 |
+| `docker compose down` | 停止 + 删除容器（Volume 不删） |
+| `docker compose down -v` | 停止 + 删除容器 + 删除 Volume |
+| `docker network ls` | 列出所有网络 |
 
 ---
 
