@@ -302,3 +302,229 @@ CMD ["java", "-jar", "/app.jar"]  ← 第4层：启动命令
 | `docker logs 容器` | 看日志 |
 | `docker images` | 看本地镜像 |
 | `docker image history 镜像` | 看镜像分层 |
+
+---
+
+## 十一、Dockerfile — 构建自己的镜像
+
+### 上帝视角
+
+**Dockerfile = 镜像的"菜谱"。** 里面一行一个指令，告诉 Docker 怎么做出你的镜像。
+
+```
+Dockerfile（菜谱） → docker build（做菜） → Image（做好的蛋糕）
+```
+
+### 通用模板
+
+```dockerfile
+FROM _______________          ← 填：程序需要什么运行环境
+COPY _______________          ← 填：代码文件在哪，放到镜像的哪里
+RUN _______________           ← 填：需要编译吗？装依赖吗？
+CMD _______________           ← 填：怎么启动这个程序
+```
+
+### 和 Spring Boot 项目的对应关系
+
+把 IDEA 里跑项目的步骤翻译成 Dockerfile：
+
+| IDEA 里做的事 | Dockerfile |
+|-------------|-----------|
+| 装 JDK 17 | `FROM eclipse-temurin:17-jdk-alpine` |
+| 代码在本地目录 | `COPY target/my-app.jar /app.jar` |
+| cd 到项目目录 | `WORKDIR /app`（非必须，让路径整齐） |
+| mvn package（编译打包） | `RUN` 或本地做完直接 COPY |
+| java -jar 启动 | `CMD ["java", "-jar", "/app.jar"]` |
+
+### 示例：Hello.java → 镜像 → 容器
+
+**第一步：写 Java 代码**
+
+```bash
+cd ~/docker-demo
+cat > Hello.java << 'EOF'
+public class Hello {
+    public static void main(String[] args) {
+        System.out.println("Hello from Docker!");
+    }
+}
+EOF
+```
+
+**第二步：写 Dockerfile**
+
+```dockerfile
+FROM eclipse-temurin:17-jdk-alpine
+COPY Hello.java /app/
+WORKDIR /app
+RUN javac Hello.java
+CMD ["java", "Hello"]
+```
+
+| 指令 | 人话翻译 |
+|------|---------|
+| `FROM eclipse-temurin:17-jdk-alpine` | "给我一个装了 JDK 17 的空 Linux" |
+| `COPY Hello.java /app/` | "把 Hello.java 复制进镜像的 /app/ 目录" |
+| `WORKDIR /app` | "后面所有操作默认在 /app 目录下执行" |
+| `RUN javac Hello.java` | "在镜像里编译" |
+| `CMD ["java", "Hello"]` | "容器启动时，运行 java Hello" |
+
+**Q：为什么需要 WORKDIR /app？**
+
+如果没有 WORKDIR，默认在根目录 `/`。`RUN javac Hello.java` 在 `/` 下执行，找不到 `/app/` 里的 `Hello.java`。WORKDIR 切换到 `/app`，后续命令都能找到文件。
+
+**第三步：构建镜像**
+
+```bash
+sudo docker build -t hello-docker:1.0 .
+```
+
+`-t` = 起名（tag），`hello-docker` 是镜像名，`1.0` 是版本号，`.` = Dockerfile 在当前目录。
+
+**第四步：运行容器**
+
+```bash
+sudo docker run hello-docker:1.0                    # Docker 自动分配随机容器名
+sudo docker run --name my-hello hello-docker:1.0    # 指定容器名为 my-hello
+```
+
+---
+
+### 核心指令
+
+#### 1. FROM — 指定基础镜像
+
+镜像最初是空的。`FROM` 选择一个预装了 JDK 的操作系统。
+
+```dockerfile
+FROM eclipse-temurin:17-jdk-alpine
+```
+
+**没有 FROM，镜像里连 `java` 命令都不存在，程序完全没法跑。**
+
+> **JDK 的作用：** `.java` 文件是给人看的，电脑只认字节码。JDK 里的 `javac` 把 `.java` 翻译成 `.class`，`java` 负责执行 `.class`。
+>
+> **jar 包：** `mvn package` 把编译后的 `.class`、配置文件、依赖库打包成一个 `target/my-app.jar`。
+> 类比：手稿（源码）→ 出版社排版装订（mvn package）→ 成书（jar 包）。
+
+#### 2. COPY — 复制文件进镜像
+
+```dockerfile
+COPY Hello.java /app/
+```
+
+把你电脑上的文件拷进镜像。左边是本机路径，右边是镜像里的目标路径。
+
+#### 3. WORKDIR — 设置工作目录
+
+```dockerfile
+WORKDIR /app
+```
+
+后面所有命令都在这个目录下执行。不是必须的（可以写全路径），但让 Dockerfile 更整洁。
+
+#### 4. RUN — 构建时执行命令
+
+```dockerfile
+RUN javac Hello.java          # 编译
+RUN apt-get install -y curl   # 装工具
+```
+
+**只在 `docker build` 时执行一次。** 编译产物留在镜像里，运行时直接用。
+
+#### 5. CMD — 容器启动时的默认命令
+
+```dockerfile
+CMD ["java", "-jar", "/app.jar"]
+```
+
+**容器一启动就执行。** Spring Boot 跑起来后不会停，容器就一直活着。程序结束，容器退出。
+
+#### 6. ENV — 设置环境变量
+
+```dockerfile
+ENV DB_PASSWORD=dev123
+```
+
+在镜像里预设环境变量，代码通过 `application.yml` 的 `${DB_PASSWORD}` 占位符读取。
+
+**ENV 完整生命周期：**
+
+```
+Dockerfile ENV → 容器环境变量 → application.yml ${...} → Spring Boot 读到
+                           ↑
+                   docker run -e 可以覆盖
+```
+
+**实例：**
+
+```dockerfile
+# Dockerfile
+ENV DB_URL=jdbc:mysql://my-mysql:3306/mydb
+ENV DB_USERNAME=root
+ENV DB_PASSWORD=dev123
+ENV REDIS_HOST=my-redis
+ENV REDIS_PORT=6379
+ENV SPRING_PROFILES_ACTIVE=dev
+ENV JAVA_OPTS="-Xmx512m -Xms256m"
+```
+
+```yaml
+# application.yml — 不写具体值，只写占位符
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+```
+
+**开发/生产环境切换：**
+
+| 环境 | 在哪 | 数据库 | 密码 |
+|------|------|--------|------|
+| 开发环境 | 你的电脑 | 本地 MySQL，只有测试数据 | `ENV DB_PASSWORD=123456` |
+| 生产环境 | 云服务器 | 真实用户数据 | `docker run -e DB_PASSWORD=真密码` |
+
+同一个镜像，`-e` 传不同密码。开发和生产各用各的，代码里不存密码。
+
+**哪些要配 ENV：**
+
+| 值 | 写死 | 用 ENV |
+|----|------|--------|
+| 数据库密码 | ❌ 进 Git 就泄露 | ✅ |
+| Redis 地址 | ❌ 本地和线上不一样 | ✅ |
+| 日志级别 | ❌ 开发 debug，线上 warn | ✅ |
+| 上传文件路径 | ❌ Windows 和 Linux 不同 | ✅ |
+| 项目名、版本号 | ✅ 永远不变 | ❌ 不需要 |
+| 端口号 8080 | ✅ | ❌ 不需要 |
+
+**规则：会因为环境不同而变的 → ENV。永远不变的 → 写死。**
+
+#### 7. EXPOSE — 声明端口
+
+```dockerfile
+EXPOSE 8080
+```
+
+**只是声明"里面用 8080"，不真正打开端口。** 真正开端口靠 `docker run -p`。团队协作时必须写，让别人知道镜像用哪个端口。
+
+#### 8. CMD vs ENTRYPOINT
+
+| | CMD | ENTRYPOINT |
+|------|-----|-----------|
+| 能被 `docker run` 后面的命令覆盖吗 | ✅ 会被覆盖 | ❌ 不被覆盖 |
+| 什么时候用 | 90% 场景 | 想把容器当命令行工具用 |
+
+```bash
+# CMD 可被覆盖：
+docker run my-app echo hello   → 执行 echo hello（CMD 被覆盖，java 不跑了）
+
+# ENTRYPOINT 不被覆盖：
+docker run my-app other.jar    → 执行 java -jar other.jar（ENTRYPOINT 仍是 java -jar）
+```
+
+**工作中 90% 用 CMD 就够了。** 面试能讲"CMD 可被覆盖，ENTRYPOINT 不被覆盖"即可。
